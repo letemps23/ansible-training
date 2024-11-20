@@ -1,0 +1,30 @@
+{
+  "variables": {
+    "iso_url": "path/to/your/windows.iso",
+    "iso_checksum": "SHA256_HASH_OF_ISO"
+  },
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "sha256",
+      "headless": true,
+      "boot_wait": "5m",
+      "guest_os_type": "Windows10_64",
+      "unattended": true,
+      "floppy_files": ["autounattend.xml"],
+      "vm_name": "WindowsAutoInstall",
+      "ssh_username": "Administrator",
+      "ssh_password": "YourPassword",
+      "ssh_wait_timeout": "2h",
+      "shutdown_command": "shutdown /s /t 10 /f"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "ansible",
+      "playbook_file": "post_install.yml"
+    }
+  ]
+}

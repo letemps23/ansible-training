@@ -1,0 +1,123 @@
+- name: Install WordPress on a LAMP stack
+  hosts: webservers
+  become: true
+  vars:
+    db_name: wordpress_db
+    db_user: wp_user
+    db_password: wp_password
+    db_root_password: root_password
+    wordpress_url: https://wordpress.org/latest.tar.gz
+    wordpress_dir: /var/www/html/wordpress
+
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install necessary packages for LAMP stack
+      apt:
+        name:
+          - apache2
+          - mysql-server
+          - php
+          - php-mysql
+          - libapache2-mod-php
+          - php-cli
+          - php-curl
+          - php-gd
+        state: present
+
+    - name: Start and enable Apache service
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Start and enable MySQL service
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: Set MySQL root password
+      debconf:
+        name: mysql-server
+        question: "mysql-server/root_password"
+        value: "{{ db_root_password }}"
+        vtype: "password"
+      ignore_errors: yes
+
+    - name: Confirm MySQL root password configuration
+      debconf:
+        name: mysql-server
+        question: "mysql-server/root_password_again"
+        value: "{{ db_root_password }}"
+        vtype: "password"
+      ignore_errors: yes
+
+    - name: Secure MySQL installation
+      shell: |
+        mysql -u root -p{{ db_root_password }} -e "DELETE FROM mysql.user WHERE User='';"
+        mysql -u root -p{{ db_root_password }} -e "DROP DATABASE IF EXISTS test;"
+        mysql -u root -p{{ db_root_password }} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+        mysql -u root -p{{ db_root_password }} -e "FLUSH PRIVILEGES;"
+      args:
+        warn: false
+
+    - name: Create WordPress database
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+
+    - name: Create WordPress database user
+      mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}.*:ALL"
+        state: present
+
+    - name: Download WordPress
+      get_url:
+        url: "{{ wordpress_url }}"
+        dest: /tmp/latest.tar.gz
+
+    - name: Extract WordPress
+      unarchive:
+        src: /tmp/latest.tar.gz
+        dest: /var/www/html
+        remote_src: yes
+
+    - name: Set permissions on WordPress directory
+      file:
+        path: "{{ wordpress_dir }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+        recurse: yes
+
+    - name: Create WordPress configuration file
+      copy:
+        dest: "{{ wordpress_dir }}/wp-config.php"
+        content: |
+          <?php
+          define('DB_NAME', '{{ db_name }}');
+          define('DB_USER', '{{ db_user }}');
+          define('DB_PASSWORD', '{{ db_password }}');
+          define('DB_HOST', 'localhost');
+          define('DB_CHARSET', 'utf8');
+          define('DB_COLLATE', '');
+          $table_prefix  = 'wp_';
+          define('WP_DEBUG', false);
+          if ( !defined('ABSPATH') )
+              define('ABSPATH', dirname(__FILE__) . '/');
+          require_once(ABSPATH . 'wp-settings.php');
+      owner: www-data
+      group: www-data
+      mode: '0644'
+
+    - name: Restart Apache to apply changes
+      service:
+        name: apache2
+        state: restarted

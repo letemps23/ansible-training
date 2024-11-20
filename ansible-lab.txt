@@ -1,0 +1,43 @@
+ssh-keygen -t rsa -b 4096
+cat /root/.ssh/id_rsa.pub
+ssh-copy-id root@node1
+ssh-copy-id root@node2
+ssh-copy-id root@node3
+
+
+ssh-copy-id -p 2223 root@localhost  # Pour node1
+ssh-copy-id -p 2224 root@localhost  # Pour node2
+ssh-copy-id -p 2225 root@localhost  # Pour node3
+
+
+inventory
+
+
+# Créer le fichier d'inventaire
+cat <<EOL > /ansible/hosts
+
+[nodes]
+node1 ansible_host=node1 ansible_port=22
+node2 ansible_host=node2 ansible_port=22
+node3 ansible_host=node3 ansible_port=22
+EOL
+
+
+
+
+ssh root@localhost -p 2222  # Pour accéder au master
+
+# Créer le répertoire de travail pour Ansible si nécessaire
+mkdir -p /etc/ansible
+
+# Créer le fichier de configuration
+cat <<EOL > /ansible/ansible.cfg
+[defaults]
+inventory = /ansible/hosts
+remote_user = root
+host_key_checking = False
+deprecation_warnings = False
+timeout = 10
+EOL
+
+

@@ -1,0 +1,12 @@
+- name: Post-install configuration for Windows
+  hosts: all
+  tasks:
+    - name: Install software package
+      win_package:
+        path: C:\path\to\installer.exe
+        state: present
+
+    - name: Set environment variable
+      win_environment:
+        name: EXAMPLE_ENV
+        value: example_value

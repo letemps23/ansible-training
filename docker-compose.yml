@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  master:
+    build:
+      context: .
+      dockerfile: Dockerfile.master
+    container_name: master
+    hostname: master
+    networks:
+      - cluster_net
+    ports:
+      - "2222:22"  # Port SSH exposé
+    tty: true
+    privileged: true
+
+  node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node1
+    hostname: node1
+    networks:
+      - cluster_net
+    ports:
+      - "2223:22"
+    tty: true
+    privileged: true
+
+  node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node2
+    hostname: node2
+    networks:
+      - cluster_net
+    ports:
+      - "2224:22"
+    tty: true
+    privileged: true
+
+  node3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node3
+    hostname: node3
+    networks:
+      - cluster_net
+    ports:
+      - "2225:22"
+    tty: true
+    privileged: true
+networks:
+  cluster_net:
+    driver: bridge
+

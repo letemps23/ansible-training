@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  samba:
+    image: dperson/samba   # Image de Samba qui inclut le serveur SMB
+    container_name: samba_server
+    environment:
+      - USERID=1000
+      - GROUPID=1000
+      - SHARE=user1;path=/mount/user1;writable;guest_ok
+      - TZ=Etc/UTC
+    volumes:
+      - ./data:/mount
+      - ./smb.conf:/etc/samba/smb.conf
+    ports:
+      - "139:139"
+      - "445:445"
+    restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+
+volumes:
+  portainer_data:
+
